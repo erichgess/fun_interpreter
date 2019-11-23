@@ -5,8 +5,8 @@ import "strconv"
 /*
 BNF
 Expression := Factor[ExpOp Expression]
-Factor := Term [FactorOp Factor|LParen Expression RParen]
-Term := Integer | UnaryOp Term
+Factor := Term [FactorOp Factor]
+Term := Integer | UnaryOp Term | LParen Expression RParen
 Integer := Digit+
 */
 
@@ -93,6 +93,23 @@ func (i *Interpreter) Expression(tokens []Token, currentPos int) (result int, po
 }
 
 func (i *Interpreter) Factor(tokens []Token, currentPos int) (result int, pos int) {
+	result, currentPos = i.Term(tokens, currentPos)
+
+	if currentPos < len(tokens) {
+		if tokens[currentPos].ty == OperatorType {
+			if op, ok := i.factorOps[tokens[currentPos].value]; ok {
+				currentPos++
+				r, p := i.Factor(tokens, currentPos)
+				result = op(result, r)
+				currentPos = p
+			}
+		}
+	}
+
+	return result, currentPos
+}
+
+func (i *Interpreter) Term(tokens []Token, currentPos int) (result int, pos int) {
 	if tokens[currentPos].ty == LParen {
 		currentPos++
 		result, currentPos = i.Expression(tokens, currentPos)
@@ -106,7 +123,7 @@ func (i *Interpreter) Factor(tokens []Token, currentPos int) (result int, pos in
 		// if the operator is not unary then something is wrong
 		if op, ok := i.unaryOps[tokens[currentPos].value]; ok {
 			currentPos++
-			result, currentPos = i.Factor(tokens, currentPos)
+			result, currentPos = i.Term(tokens, currentPos)
 			result = op(result)
 		} else {
 			panic("unexpected token in factor")
@@ -114,17 +131,6 @@ func (i *Interpreter) Factor(tokens []Token, currentPos int) (result int, pos in
 	} else if tokens[currentPos].ty == IntType {
 		result, _ = strconv.Atoi(tokens[currentPos].value)
 		currentPos++
-	}
-
-	if currentPos < len(tokens) {
-		if tokens[currentPos].ty == OperatorType {
-			if op, ok := i.factorOps[tokens[currentPos].value]; ok {
-				currentPos++
-				r, p := i.Factor(tokens, currentPos)
-				result = op(result, r)
-				currentPos = p
-			}
-		}
 	}
 
 	return result, currentPos
