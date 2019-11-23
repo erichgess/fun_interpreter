@@ -53,7 +53,7 @@ func (i *Interpreter) Execute(text string) int {
 
 	tokens := tokenizer.tokenize(text)
 
-	result, pos := i.Expression(tokens, 0)
+	result, pos := i.expression(tokens, 0)
 	if pos != len(tokens) {
 		panic("unexpected tokens in expression")
 	}
@@ -73,13 +73,13 @@ func (i *Interpreter) createTokenizer() tokenizer {
 	return newTokenizer(opsList)
 }
 
-func (i *Interpreter) Expression(tokens []token, currentPos int) (result int, pos int) {
-	result, pos = i.Factor(tokens, currentPos)
+func (i *Interpreter) expression(tokens []token, currentPos int) (result int, pos int) {
+	result, pos = i.factor(tokens, currentPos)
 
 	if pos < len(tokens) && tokens[pos].ty == operatorType {
 		if op, ok := i.expOps[tokens[pos].value]; ok {
 			pos++
-			r, p := i.Expression(tokens, pos)
+			r, p := i.expression(tokens, pos)
 			result = op(result, r)
 			pos = p
 		}
@@ -92,14 +92,14 @@ func (i *Interpreter) Expression(tokens []token, currentPos int) (result int, po
 	return result, pos
 }
 
-func (i *Interpreter) Factor(tokens []token, currentPos int) (result int, pos int) {
-	result, currentPos = i.Term(tokens, currentPos)
+func (i *Interpreter) factor(tokens []token, currentPos int) (result int, pos int) {
+	result, currentPos = i.term(tokens, currentPos)
 
 	if currentPos < len(tokens) {
 		if tokens[currentPos].ty == operatorType {
 			if op, ok := i.factorOps[tokens[currentPos].value]; ok {
 				currentPos++
-				r, p := i.Factor(tokens, currentPos)
+				r, p := i.factor(tokens, currentPos)
 				result = op(result, r)
 				currentPos = p
 			}
@@ -109,10 +109,10 @@ func (i *Interpreter) Factor(tokens []token, currentPos int) (result int, pos in
 	return result, currentPos
 }
 
-func (i *Interpreter) Term(tokens []token, currentPos int) (result int, pos int) {
+func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int) {
 	if tokens[currentPos].ty == lParen {
 		currentPos++
-		result, currentPos = i.Expression(tokens, currentPos)
+		result, currentPos = i.expression(tokens, currentPos)
 
 		// consume right paren
 		if currentPos >= len(tokens) || tokens[currentPos].ty != rParen {
@@ -123,7 +123,7 @@ func (i *Interpreter) Term(tokens []token, currentPos int) (result int, pos int)
 		// if the operator is not unary then something is wrong
 		if op, ok := i.unaryOps[tokens[currentPos].value]; ok {
 			currentPos++
-			result, currentPos = i.Term(tokens, currentPos)
+			result, currentPos = i.term(tokens, currentPos)
 			result = op(result)
 		} else {
 			panic("unexpected token in factor")
