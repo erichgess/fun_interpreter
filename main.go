@@ -10,5 +10,6 @@ func main() {
 	tokenizer := tok.NewTokenizer([]string{"*", "+"})
 	tokens := tokenizer.Tokenize(input)
 	fmt.Printf("%+v\n", tokens)
-	fmt.Println(tok.Expression(tokens, 0))
+	interpreter := tok.NewInterpreter()
+	fmt.Println(interpreter.Expression(tokens, 0))
 }

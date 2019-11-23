@@ -9,13 +9,24 @@ Factor := Integer [MULTIPLY Factor]|'(' Expression ')'
 Integer := Digit+
 */
 
-func Expression(tokens []Token, currentPos int) (result int, pos int) {
-	result, pos = Factor(tokens, currentPos)
+type BinaryOperator interface {
+	Apply(a, b int) int
+}
+
+type Interpreter struct {
+}
+
+func NewInterpreter() Interpreter {
+	return Interpreter{}
+}
+
+func (i *Interpreter) Expression(tokens []Token, currentPos int) (result int, pos int) {
+	result, pos = i.Factor(tokens, currentPos)
 
 	if pos < len(tokens) {
 		if tokens[pos].ty == OperatorType && tokens[pos].value == "+" {
 			pos++
-			r, p := Expression(tokens, pos)
+			r, p := i.Expression(tokens, pos)
 			result += r
 			pos = p
 		}
@@ -24,10 +35,10 @@ func Expression(tokens []Token, currentPos int) (result int, pos int) {
 	return result, pos
 }
 
-func Factor(tokens []Token, currentPos int) (result int, pos int) {
+func (i *Interpreter) Factor(tokens []Token, currentPos int) (result int, pos int) {
 	if tokens[currentPos].ty == LParen {
 		currentPos++
-		result, currentPos = Expression(tokens, currentPos)
+		result, currentPos = i.Expression(tokens, currentPos)
 
 		// consume right paren
 		if tokens[currentPos].ty != RParen {
@@ -42,7 +53,7 @@ func Factor(tokens []Token, currentPos int) (result int, pos int) {
 	if currentPos < len(tokens) {
 		if tokens[currentPos].ty == OperatorType && tokens[currentPos].value == "*" {
 			currentPos++
-			r, p := Factor(tokens, currentPos)
+			r, p := i.Factor(tokens, currentPos)
 			result *= r
 			currentPos = p
 		}
