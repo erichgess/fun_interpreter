@@ -51,7 +51,7 @@ func (i *Interpreter) Execute(text string) int {
 	// construct a tokenizer
 	tokenizer := i.createTokenizer()
 
-	tokens := tokenizer.Tokenize(text)
+	tokens := tokenizer.tokenize(text)
 
 	result, pos := i.Expression(tokens, 0)
 	if pos != len(tokens) {
@@ -60,7 +60,7 @@ func (i *Interpreter) Execute(text string) int {
 	return result
 }
 
-func (i *Interpreter) createTokenizer() Tokenizer {
+func (i *Interpreter) createTokenizer() tokenizer {
 	// build a list of the operators in this interpreter
 	opsList := make([]string, 0, len(i.expOps)+len(i.factorOps))
 	for k, _ := range i.expOps {
@@ -70,7 +70,7 @@ func (i *Interpreter) createTokenizer() Tokenizer {
 		opsList = append(opsList, k)
 	}
 	// create tokenizer
-	return NewTokenizer(opsList)
+	return newTokenizer(opsList)
 }
 
 func (i *Interpreter) Expression(tokens []token, currentPos int) (result int, pos int) {

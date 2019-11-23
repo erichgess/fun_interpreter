@@ -18,13 +18,13 @@ type token struct {
 
 type used struct{}
 
-type Tokenizer struct {
+type tokenizer struct {
 	operatorRuneSet map[rune]used
 	operators       []string
 }
 
-func NewTokenizer(operators []string) Tokenizer {
-	tokenizer := Tokenizer{
+func newTokenizer(operators []string) tokenizer {
+	tokenizer := tokenizer{
 		operatorRuneSet: make(map[rune]used),
 		operators:       operators,
 	}
@@ -39,7 +39,7 @@ func NewTokenizer(operators []string) Tokenizer {
 	return tokenizer
 }
 
-func (t *Tokenizer) Tokenize(text string) []token {
+func (t *tokenizer) tokenize(text string) []token {
 	raw := []rune(text)
 	tokens := make([]token, 0)
 	// while not EOL
@@ -53,7 +53,7 @@ func (t *Tokenizer) Tokenize(text string) []token {
 	return tokens
 }
 
-func (t *Tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPos int) {
+func (t *tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPos int) {
 	// consume any whitespace
 	for ; currentChar < len(raw) && unicode.IsSpace(raw[currentChar]); currentChar++ {
 	}
@@ -80,7 +80,7 @@ func (t *Tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPo
 	}
 }
 
-func (t *Tokenizer) extractIntToken(raw []rune, currentChar int) (tok token, charPos int) {
+func (t *tokenizer) extractIntToken(raw []rune, currentChar int) (tok token, charPos int) {
 	for charPos = currentChar; charPos < len(raw) && unicode.IsDigit(raw[charPos]); charPos++ {
 	}
 
@@ -92,7 +92,7 @@ func (t *Tokenizer) extractIntToken(raw []rune, currentChar int) (tok token, cha
 	return tok, charPos
 }
 
-func (t *Tokenizer) extractOperatorToken(raw []rune, currentChar int) (tok token, newCharPos int) {
+func (t *tokenizer) extractOperatorToken(raw []rune, currentChar int) (tok token, newCharPos int) {
 	charPos := currentChar
 	for ; charPos < len(raw); charPos++ {
 		if _, ok := t.operatorRuneSet[raw[charPos]]; !ok {
