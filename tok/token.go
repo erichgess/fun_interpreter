@@ -52,6 +52,10 @@ func (t *Tokenizer) Tokenize(text string) []Token {
 }
 
 func (t *Tokenizer) extractToken(raw []rune, currentChar int) (token Token, charPos int) {
+	// consume any whitespace
+	for ; currentChar < len(raw) && unicode.IsSpace(raw[currentChar]); currentChar++ {
+	}
+
 	// Check the current char to determine what type of token this is
 	// if char is digit then extract integer token
 	if unicode.IsDigit(raw[currentChar]) {
