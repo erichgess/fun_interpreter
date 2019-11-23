@@ -4,22 +4,26 @@ import "strconv"
 
 /*
 BNF
-Expression := Factor[PLUS Expression]
-Factor := Integer [MULTIPLY Factor]|'(' Expression ')'
+Expression := Factor[ExpOp Expression]
+Factor := Term [FactorOp Factor|LParen Expression RParen]
+Term := Integer | UnaryOp Term
 Integer := Digit+
 */
 
 type BinaryOperator func(a, b int) int
+type UnaryOperator func(a int) int
 
 type Interpreter struct {
 	expOps    map[string]BinaryOperator
 	factorOps map[string]BinaryOperator
+	unaryOps  map[string]UnaryOperator
 }
 
 func NewInterpreter() Interpreter {
 	return Interpreter{
 		expOps:    make(map[string]BinaryOperator),
 		factorOps: make(map[string]BinaryOperator),
+		unaryOps:  make(map[string]UnaryOperator),
 	}
 }
 
@@ -37,6 +41,10 @@ func (i *Interpreter) AddFactorOp(symbol string, apply BinaryOperator) {
 		panic("attempting to add operator to factor set when it is already in expression set")
 	}
 	i.factorOps[symbol] = apply
+}
+
+func (i *Interpreter) AddUnaryOp(symbol string, apply UnaryOperator) {
+	i.unaryOps[symbol] = apply
 }
 
 func (i *Interpreter) Execute(text string) int {
@@ -94,6 +102,15 @@ func (i *Interpreter) Factor(tokens []Token, currentPos int) (result int, pos in
 			panic("expected right paren")
 		}
 		currentPos++
+	} else if tokens[currentPos].ty == OperatorType {
+		// if the operator is not unary then something is wrong
+		if op, ok := i.unaryOps[tokens[currentPos].value]; ok {
+			currentPos++
+			result, currentPos = i.Factor(tokens, currentPos)
+			result = op(result)
+		} else {
+			panic("unexpected token in factor")
+		}
 	} else if tokens[currentPos].ty == IntType {
 		result, _ = strconv.Atoi(tokens[currentPos].value)
 		currentPos++
