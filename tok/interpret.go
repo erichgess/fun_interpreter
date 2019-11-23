@@ -4,10 +4,12 @@ import "strconv"
 
 /*
 BNF
+Assignment := Label AssignOp Expression
 Expression := Factor[ExpOp Expression]
 Factor := Term [FactorOp Factor]
-Term := Integer | UnaryOp Term | LParen Expression RParen
+Term := Integer | Label | UnaryOp Term | LParen Expression RParen
 Integer := Digit+
+Label := Alpha[Alpha|Digit]+
 */
 
 // BinaryOperator is a function which takes two integers and returns one
@@ -30,17 +32,19 @@ type UnaryOperator func(a int) int
 // - Integer := Digit+
 //
 type Interpreter struct {
-	expOps    map[string]BinaryOperator
-	factorOps map[string]BinaryOperator
-	unaryOps  map[string]UnaryOperator
+	expOps        map[string]BinaryOperator
+	factorOps     map[string]BinaryOperator
+	unaryOps      map[string]UnaryOperator
+	labelBindings map[string]int
 }
 
 // NewInterpreter configures a new Interpreter object and returns it
 func NewInterpreter() Interpreter {
 	return Interpreter{
-		expOps:    make(map[string]BinaryOperator),
-		factorOps: make(map[string]BinaryOperator),
-		unaryOps:  make(map[string]UnaryOperator),
+		expOps:        make(map[string]BinaryOperator),
+		factorOps:     make(map[string]BinaryOperator),
+		unaryOps:      make(map[string]UnaryOperator),
+		labelBindings: make(map[string]int),
 	}
 }
 
@@ -82,7 +86,13 @@ func (i *Interpreter) Execute(text string) int {
 
 	tokens := tokenizer.tokenize(text)
 
-	result, pos := i.expression(tokens, 0)
+	var pos int
+	var result int
+	if len(tokens) >= 3 && tokens[0].ty == labelType && tokens[1].ty == assignmentOpType {
+		result, pos = i.assignment(tokens, 0)
+	} else {
+		result, pos = i.expression(tokens, 0)
+	}
 	if pos != len(tokens) {
 		panic("unexpected tokens in expression")
 	}
@@ -100,6 +110,24 @@ func (i *Interpreter) createTokenizer() tokenizer {
 	}
 	// create tokenizer
 	return newTokenizer(opsList)
+}
+
+func (i *Interpreter) assignment(tokens []token, currentPos int) (result int, pos int) {
+	if tokens[currentPos].ty != labelType {
+		panic("invalid left side in assignment")
+	}
+
+	label := tokens[currentPos].value
+	currentPos++
+
+	if tokens[currentPos].ty != assignmentOpType {
+		panic("expecting assignment operator")
+	}
+	currentPos++
+	result, pos = i.expression(tokens, currentPos)
+	i.labelBindings[label] = result
+
+	return result, pos
 }
 
 func (i *Interpreter) expression(tokens []token, currentPos int) (result int, pos int) {
@@ -160,7 +188,22 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int)
 	} else if tokens[currentPos].ty == intType {
 		result, _ = strconv.Atoi(tokens[currentPos].value)
 		currentPos++
+	} else if tokens[currentPos].ty == labelType {
+		result, currentPos = i.lookupLabel(tokens, currentPos)
 	}
 
 	return result, currentPos
+}
+
+func (i *Interpreter) lookupLabel(tokens []token, currentPos int) (result int, pos int) {
+	if tokens[currentPos].ty != labelType {
+		panic("attempting to look up label binding for token that is not a label")
+	}
+
+	label := tokens[currentPos].value
+	if v, ok := i.labelBindings[label]; ok {
+		return v, currentPos + 1
+	}
+
+	panic("could not find value for label: " + label)
 }

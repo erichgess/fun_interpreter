@@ -5,10 +5,12 @@ import "unicode"
 type tokenType int
 
 const (
-	intType      tokenType = iota
-	operatorType tokenType = iota
-	lParen       tokenType = iota
-	rParen       tokenType = iota
+	intType          tokenType = iota
+	operatorType     tokenType = iota
+	lParen           tokenType = iota
+	rParen           tokenType = iota
+	labelType        tokenType = iota
+	assignmentOpType tokenType = iota
 )
 
 type token struct {
@@ -62,6 +64,8 @@ func (t *tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPo
 	// if char is digit then extract integer token
 	if unicode.IsDigit(raw[currentChar]) {
 		return t.extractIntToken(raw, currentChar)
+	} else if unicode.IsLetter(raw[currentChar]) {
+		return t.extractLabelToken(raw, currentChar)
 	} else if _, ok := t.operatorRuneSet[raw[currentChar]]; ok {
 		// if char is not then consume operator
 		return t.extractOperatorToken(raw, currentChar)
@@ -75,8 +79,13 @@ func (t *tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPo
 			value: ")",
 			ty:    rParen,
 		}, currentChar + 1
+	} else if raw[currentChar] == '=' {
+		return token{
+			value: "=",
+			ty:    assignmentOpType,
+		}, currentChar + 1
 	} else {
-		panic("unexpected character during tokenization")
+		panic("unexpected character during tokenization: " + string(raw[currentChar]))
 	}
 }
 
@@ -106,4 +115,24 @@ func (t *tokenizer) extractOperatorToken(raw []rune, currentChar int) (tok token
 	}
 
 	return tok, charPos
+}
+
+func (t *tokenizer) extractLabelToken(raw []rune, currentChar int) (tok token, newCharPos int) {
+	if !unicode.IsLetter(raw[currentChar]) {
+		panic("`label` must start with letter")
+	}
+
+	start := currentChar
+	for ; currentChar < len(raw); currentChar++ {
+		if !unicode.IsLetter(raw[currentChar]) && !unicode.IsDigit(raw[currentChar]) {
+			break
+		}
+	}
+
+	tok = token{
+		value: string(raw[start:currentChar]),
+		ty:    labelType,
+	}
+
+	return tok, currentChar
 }
