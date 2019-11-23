@@ -6,8 +6,9 @@ import (
 )
 
 func main() {
-	input := "235 * 456"
+	input := "1 + 2 * 3"
 	tokenizer := tok.NewTokenizer([]string{"*", "+"})
 	tokens := tokenizer.Tokenize(input)
 	fmt.Printf("%+v\n", tokens)
+	fmt.Println(tok.Expression(tokens, 0))
 }
