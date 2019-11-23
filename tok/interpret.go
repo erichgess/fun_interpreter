@@ -4,6 +4,7 @@ import "strconv"
 
 /*
 BNF
+Statement := Assignment | Expression
 Assignment := Label AssignOp Expression
 Expression := Factor[ExpOp Expression]
 Factor := Term [FactorOp Factor]
