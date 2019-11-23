@@ -7,6 +7,8 @@ type TokenType int
 const (
 	IntType      TokenType = iota
 	OperatorType TokenType = iota
+	LParen       TokenType = iota
+	RParen       TokenType = iota
 )
 
 type Token struct {
@@ -60,9 +62,21 @@ func (t *Tokenizer) extractToken(raw []rune, currentChar int) (token Token, char
 	// if char is digit then extract integer token
 	if unicode.IsDigit(raw[currentChar]) {
 		return t.extractIntToken(raw, currentChar)
-	} else {
+	} else if _, ok := t.operatorRuneSet[raw[currentChar]]; ok {
 		// if char is not then consume operator
 		return t.extractOperatorToken(raw, currentChar)
+	} else if raw[currentChar] == '(' {
+		return Token{
+			value: "(",
+			ty:    LParen,
+		}, currentChar + 1
+	} else if raw[currentChar] == ')' {
+		return Token{
+			value: ")",
+			ty:    RParen,
+		}, currentChar + 1
+	} else {
+		panic("unexpected character during tokenization")
 	}
 }
 

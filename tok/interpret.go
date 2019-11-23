@@ -5,7 +5,7 @@ import "strconv"
 /*
 BNF
 Expression := Factor[PLUS Expression]
-Factor := Integer [MULTIPLY Factor]
+Factor := Integer [MULTIPLY Factor]|'(' Expression ')'
 Integer := Digit+
 */
 
@@ -18,8 +18,6 @@ func Expression(tokens []Token, currentPos int) (result int, pos int) {
 			r, p := Expression(tokens, pos)
 			result += r
 			pos = p
-		} else {
-			panic("unexpected token in expression")
 		}
 	}
 
@@ -27,21 +25,28 @@ func Expression(tokens []Token, currentPos int) (result int, pos int) {
 }
 
 func Factor(tokens []Token, currentPos int) (result int, pos int) {
-	if tokens[currentPos].ty != IntType {
-		panic("unexpected token")
+	if tokens[currentPos].ty == LParen {
+		currentPos++
+		result, currentPos = Expression(tokens, currentPos)
+
+		// consume right paren
+		if tokens[currentPos].ty != RParen {
+			panic("expected right paren")
+		}
+		currentPos++
+	} else if tokens[currentPos].ty == IntType {
+		result, _ = strconv.Atoi(tokens[currentPos].value)
+		currentPos++
 	}
 
-	result, _ = strconv.Atoi(tokens[currentPos].value)
-	pos = currentPos + 1
-
-	if pos < len(tokens) {
-		if tokens[pos].ty == OperatorType && tokens[pos].value == "*" {
-			pos++
-			r, p := Expression(tokens, pos)
+	if currentPos < len(tokens) {
+		if tokens[currentPos].ty == OperatorType && tokens[currentPos].value == "*" {
+			currentPos++
+			r, p := Factor(tokens, currentPos)
 			result *= r
-			pos = p
+			currentPos = p
 		}
 	}
 
-	return result, pos
+	return result, currentPos
 }

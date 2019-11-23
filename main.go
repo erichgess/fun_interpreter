@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	input := "1 + 2 * 3"
+	input := "3 * (1 + 2)"
 	tokenizer := tok.NewTokenizer([]string{"*", "+"})
 	tokens := tokenizer.Tokenize(input)
 	fmt.Printf("%+v\n", tokens)
