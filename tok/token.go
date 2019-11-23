@@ -5,10 +5,10 @@ import "unicode"
 type tokenType int
 
 const (
-	IntType      tokenType = iota
-	OperatorType tokenType = iota
-	LParen       tokenType = iota
-	RParen       tokenType = iota
+	intType      tokenType = iota
+	operatorType tokenType = iota
+	lParen       tokenType = iota
+	rParen       tokenType = iota
 )
 
 type token struct {
@@ -68,12 +68,12 @@ func (t *Tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPo
 	} else if raw[currentChar] == '(' {
 		return token{
 			value: "(",
-			ty:    LParen,
+			ty:    lParen,
 		}, currentChar + 1
 	} else if raw[currentChar] == ')' {
 		return token{
 			value: ")",
-			ty:    RParen,
+			ty:    rParen,
 		}, currentChar + 1
 	} else {
 		panic("unexpected character during tokenization")
@@ -86,7 +86,7 @@ func (t *Tokenizer) extractIntToken(raw []rune, currentChar int) (tok token, cha
 
 	tok = token{
 		value: string(raw[currentChar:charPos]),
-		ty:    IntType,
+		ty:    intType,
 	}
 
 	return tok, charPos
@@ -102,7 +102,7 @@ func (t *Tokenizer) extractOperatorToken(raw []rune, currentChar int) (tok token
 
 	tok = token{
 		value: string(raw[currentChar:charPos]),
-		ty:    OperatorType,
+		ty:    operatorType,
 	}
 
 	return tok, charPos

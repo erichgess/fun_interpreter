@@ -76,7 +76,7 @@ func (i *Interpreter) createTokenizer() Tokenizer {
 func (i *Interpreter) Expression(tokens []token, currentPos int) (result int, pos int) {
 	result, pos = i.Factor(tokens, currentPos)
 
-	if pos < len(tokens) && tokens[pos].ty == OperatorType {
+	if pos < len(tokens) && tokens[pos].ty == operatorType {
 		if op, ok := i.expOps[tokens[pos].value]; ok {
 			pos++
 			r, p := i.Expression(tokens, pos)
@@ -85,7 +85,7 @@ func (i *Interpreter) Expression(tokens []token, currentPos int) (result int, po
 		}
 	}
 
-	if pos < len(tokens) && tokens[pos].ty != RParen {
+	if pos < len(tokens) && tokens[pos].ty != rParen {
 		panic("unexpected token in expression")
 	}
 
@@ -96,7 +96,7 @@ func (i *Interpreter) Factor(tokens []token, currentPos int) (result int, pos in
 	result, currentPos = i.Term(tokens, currentPos)
 
 	if currentPos < len(tokens) {
-		if tokens[currentPos].ty == OperatorType {
+		if tokens[currentPos].ty == operatorType {
 			if op, ok := i.factorOps[tokens[currentPos].value]; ok {
 				currentPos++
 				r, p := i.Factor(tokens, currentPos)
@@ -110,16 +110,16 @@ func (i *Interpreter) Factor(tokens []token, currentPos int) (result int, pos in
 }
 
 func (i *Interpreter) Term(tokens []token, currentPos int) (result int, pos int) {
-	if tokens[currentPos].ty == LParen {
+	if tokens[currentPos].ty == lParen {
 		currentPos++
 		result, currentPos = i.Expression(tokens, currentPos)
 
 		// consume right paren
-		if currentPos >= len(tokens) || tokens[currentPos].ty != RParen {
+		if currentPos >= len(tokens) || tokens[currentPos].ty != rParen {
 			panic("expected right paren")
 		}
 		currentPos++
-	} else if tokens[currentPos].ty == OperatorType {
+	} else if tokens[currentPos].ty == operatorType {
 		// if the operator is not unary then something is wrong
 		if op, ok := i.unaryOps[tokens[currentPos].value]; ok {
 			currentPos++
@@ -128,7 +128,7 @@ func (i *Interpreter) Term(tokens []token, currentPos int) (result int, pos int)
 		} else {
 			panic("unexpected token in factor")
 		}
-	} else if tokens[currentPos].ty == IntType {
+	} else if tokens[currentPos].ty == intType {
 		result, _ = strconv.Atoi(tokens[currentPos].value)
 		currentPos++
 	}
