@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	input := "3 * (4/2)"
+	input := "(3 * 4 + 2)/2"
 	tokenizer := tok.NewTokenizer([]string{"*", "+", "/"})
 	tokens := tokenizer.Tokenize(input)
 	fmt.Printf("%+v\n", tokens)
@@ -14,5 +14,5 @@ func main() {
 	interpreter.AddExpressionOp("+", func(a, b int) int { return a + b })
 	interpreter.AddFactorOp("*", func(a, b int) int { return a * b })
 	interpreter.AddFactorOp("/", func(a, b int) int { return a / b })
-	fmt.Println(interpreter.Expression(tokens, 0))
+	fmt.Println(interpreter.Execute(tokens))
 }

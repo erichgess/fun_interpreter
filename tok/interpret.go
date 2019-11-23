@@ -31,18 +31,28 @@ func (i *Interpreter) AddFactorOp(symbol string, apply BinaryOperator) {
 	i.factorOps[symbol] = apply
 }
 
+func (i *Interpreter) Execute(tokens []Token) int {
+	result, pos := i.Expression(tokens, 0)
+	if pos != len(tokens) {
+		panic("unexpected tokens in expression")
+	}
+	return result
+}
+
 func (i *Interpreter) Expression(tokens []Token, currentPos int) (result int, pos int) {
 	result, pos = i.Factor(tokens, currentPos)
 
-	if pos < len(tokens) {
-		if tokens[pos].ty == OperatorType {
-			if op, ok := i.expOps[tokens[pos].value]; ok {
-				pos++
-				r, p := i.Expression(tokens, pos)
-				result = op(result, r)
-				pos = p
-			}
+	if pos < len(tokens) && tokens[pos].ty == OperatorType {
+		if op, ok := i.expOps[tokens[pos].value]; ok {
+			pos++
+			r, p := i.Expression(tokens, pos)
+			result = op(result, r)
+			pos = p
 		}
+	}
+
+	if pos < len(tokens) && tokens[pos].ty != RParen {
+		panic("unexpected token in expression")
 	}
 
 	return result, pos
@@ -54,7 +64,7 @@ func (i *Interpreter) Factor(tokens []Token, currentPos int) (result int, pos in
 		result, currentPos = i.Expression(tokens, currentPos)
 
 		// consume right paren
-		if tokens[currentPos].ty != RParen {
+		if currentPos >= len(tokens) || tokens[currentPos].ty != RParen {
 			panic("expected right paren")
 		}
 		currentPos++
