@@ -67,7 +67,7 @@ func (t *Tokenizer) extractIntToken(raw []rune, currentChar int) (token Token, c
 	}
 
 	tok := Token{
-		value: string(raw[currentChar:(charPos - currentChar)]),
+		value: string(raw[currentChar:charPos]),
 		ty:    IntType,
 	}
 

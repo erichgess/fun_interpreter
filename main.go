@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	input := "235*"
+	input := "235*456"
 	tokenizer := tok.NewTokenizer([]string{"*", "+"})
 	tokens := tokenizer.Tokenize(input)
 	fmt.Printf("%+v\n", tokens)
