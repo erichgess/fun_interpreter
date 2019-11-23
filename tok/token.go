@@ -2,18 +2,18 @@ package tok
 
 import "unicode"
 
-type TokenType int
+type tokenType int
 
 const (
-	IntType      TokenType = iota
-	OperatorType TokenType = iota
-	LParen       TokenType = iota
-	RParen       TokenType = iota
+	IntType      tokenType = iota
+	OperatorType tokenType = iota
+	LParen       tokenType = iota
+	RParen       tokenType = iota
 )
 
 type Token struct {
 	value string
-	ty    TokenType
+	ty    tokenType
 }
 
 type used struct{}
