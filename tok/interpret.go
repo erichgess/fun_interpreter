@@ -35,6 +35,7 @@ type Interpreter struct {
 	unaryOps  map[string]UnaryOperator
 }
 
+// NewInterpreter configures a new Interpreter object and returns it
 func NewInterpreter() Interpreter {
 	return Interpreter{
 		expOps:    make(map[string]BinaryOperator),
