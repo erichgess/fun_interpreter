@@ -11,7 +11,7 @@ const (
 	RParen       tokenType = iota
 )
 
-type Token struct {
+type token struct {
 	value string
 	ty    tokenType
 }
@@ -39,13 +39,13 @@ func NewTokenizer(operators []string) Tokenizer {
 	return tokenizer
 }
 
-func (t *Tokenizer) Tokenize(text string) []Token {
+func (t *Tokenizer) Tokenize(text string) []token {
 	raw := []rune(text)
-	tokens := make([]Token, 0)
+	tokens := make([]token, 0)
 	// while not EOL
 	for currentChar := 0; currentChar < len(raw); {
 		// create a new token
-		var tok Token
+		var tok token
 		tok, currentChar = t.extractToken(raw, currentChar)
 		tokens = append(tokens, tok)
 	}
@@ -53,7 +53,7 @@ func (t *Tokenizer) Tokenize(text string) []Token {
 	return tokens
 }
 
-func (t *Tokenizer) extractToken(raw []rune, currentChar int) (token Token, charPos int) {
+func (t *Tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPos int) {
 	// consume any whitespace
 	for ; currentChar < len(raw) && unicode.IsSpace(raw[currentChar]); currentChar++ {
 	}
@@ -66,12 +66,12 @@ func (t *Tokenizer) extractToken(raw []rune, currentChar int) (token Token, char
 		// if char is not then consume operator
 		return t.extractOperatorToken(raw, currentChar)
 	} else if raw[currentChar] == '(' {
-		return Token{
+		return token{
 			value: "(",
 			ty:    LParen,
 		}, currentChar + 1
 	} else if raw[currentChar] == ')' {
-		return Token{
+		return token{
 			value: ")",
 			ty:    RParen,
 		}, currentChar + 1
@@ -80,11 +80,11 @@ func (t *Tokenizer) extractToken(raw []rune, currentChar int) (token Token, char
 	}
 }
 
-func (t *Tokenizer) extractIntToken(raw []rune, currentChar int) (token Token, charPos int) {
+func (t *Tokenizer) extractIntToken(raw []rune, currentChar int) (tok token, charPos int) {
 	for charPos = currentChar; charPos < len(raw) && unicode.IsDigit(raw[charPos]); charPos++ {
 	}
 
-	tok := Token{
+	tok = token{
 		value: string(raw[currentChar:charPos]),
 		ty:    IntType,
 	}
@@ -92,7 +92,7 @@ func (t *Tokenizer) extractIntToken(raw []rune, currentChar int) (token Token, c
 	return tok, charPos
 }
 
-func (t *Tokenizer) extractOperatorToken(raw []rune, currentChar int) (token Token, newCharPos int) {
+func (t *Tokenizer) extractOperatorToken(raw []rune, currentChar int) (tok token, newCharPos int) {
 	charPos := currentChar
 	for ; charPos < len(raw); charPos++ {
 		if _, ok := t.operatorRuneSet[raw[charPos]]; !ok {
@@ -100,7 +100,7 @@ func (t *Tokenizer) extractOperatorToken(raw []rune, currentChar int) (token Tok
 		}
 	}
 
-	tok := Token{
+	tok = token{
 		value: string(raw[currentChar:charPos]),
 		ty:    OperatorType,
 	}

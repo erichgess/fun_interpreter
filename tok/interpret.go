@@ -73,7 +73,7 @@ func (i *Interpreter) createTokenizer() Tokenizer {
 	return NewTokenizer(opsList)
 }
 
-func (i *Interpreter) Expression(tokens []Token, currentPos int) (result int, pos int) {
+func (i *Interpreter) Expression(tokens []token, currentPos int) (result int, pos int) {
 	result, pos = i.Factor(tokens, currentPos)
 
 	if pos < len(tokens) && tokens[pos].ty == OperatorType {
@@ -92,7 +92,7 @@ func (i *Interpreter) Expression(tokens []Token, currentPos int) (result int, po
 	return result, pos
 }
 
-func (i *Interpreter) Factor(tokens []Token, currentPos int) (result int, pos int) {
+func (i *Interpreter) Factor(tokens []token, currentPos int) (result int, pos int) {
 	result, currentPos = i.Term(tokens, currentPos)
 
 	if currentPos < len(tokens) {
@@ -109,7 +109,7 @@ func (i *Interpreter) Factor(tokens []Token, currentPos int) (result int, pos in
 	return result, currentPos
 }
 
-func (i *Interpreter) Term(tokens []Token, currentPos int) (result int, pos int) {
+func (i *Interpreter) Term(tokens []token, currentPos int) (result int, pos int) {
 	if tokens[currentPos].ty == LParen {
 		currentPos++
 		result, currentPos = i.Expression(tokens, currentPos)
