@@ -265,37 +265,43 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int)
 	} else if tokens[currentPos].ty == labelType {
 		// check if this is a function call
 		if len(tokens)-currentPos-1 >= 1 && tokens[currentPos+1].ty == lParen {
-			funcName := tokens[currentPos].value
-			currentPos++
-			if tokens[currentPos].ty != lParen {
-				panic("expected lparen")
-			}
-			currentPos++
-
-			// Get function parameters
-			params := make([]int, 0)
-			for currentPos < len(tokens) && tokens[currentPos].ty != rParen {
-				var v int
-				v, currentPos = i.expression(tokens, currentPos)
-				params = append(params, v)
-
-				if tokens[currentPos].ty == commaType {
-					currentPos++
-				}
-			}
-
-			if tokens[currentPos].ty != rParen {
-				panic("expected rparen")
-			}
-			currentPos++
-			if f, ok := i.funcBindings[funcName]; ok {
-				result = f.apply(params)
-			} else {
-				panic("function name not found: " + funcName)
-			}
+			result, currentPos = i.functionCall(tokens, currentPos)
 		} else {
 			result, currentPos = i.lookupLabel(tokens, currentPos)
 		}
+	}
+
+	return result, currentPos
+}
+
+func (i *Interpreter) functionCall(tokens []token, currentPos int) (result int, pos int) {
+	funcName := tokens[currentPos].value
+	currentPos++
+	if tokens[currentPos].ty != lParen {
+		panic("expected lparen")
+	}
+	currentPos++
+
+	// Get function parameters
+	params := make([]int, 0)
+	for currentPos < len(tokens) && tokens[currentPos].ty != rParen {
+		var v int
+		v, currentPos = i.expression(tokens, currentPos)
+		params = append(params, v)
+
+		if tokens[currentPos].ty == commaType {
+			currentPos++
+		}
+	}
+
+	if tokens[currentPos].ty != rParen {
+		panic("expected rparen")
+	}
+	currentPos++
+	if f, ok := i.funcBindings[funcName]; ok {
+		result = f.apply(params)
+	} else {
+		panic("function name not found: " + funcName)
 	}
 
 	return result, currentPos
