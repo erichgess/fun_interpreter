@@ -20,4 +20,9 @@ func main() {
 	fmt.Println(interpreter.Execute(input))
 	input2 := "second + 10"
 	fmt.Println(interpreter.Execute(input2))
+
+	f := "def f x y = 5 * 2"
+	fmt.Println(interpreter.Execute(f))
+	f = "f() * 3"
+	fmt.Println(interpreter.Execute(f))
 }

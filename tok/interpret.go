@@ -1,23 +1,21 @@
 package tok
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+)
 
 /*
 BNF
-Statement := Assignment | Expression
+Statement := Assignment | Expression | FuncDef
+FuncDef := Label(def) Label+ AssignOp Expression
 Assignment := Label AssignOp Expression
 Expression := Factor[ExpOp Expression]
 Factor := Term [FactorOp Factor]
-Term := Integer | Label | UnaryOp Term | LParen Expression RParen
+Term := Integer | Label | UnaryOp Term | LParen Expression RParen | Label LParen [Label[,Label]*] RParen
 Integer := Digit+
 Label := Alpha[Alpha|Digit]+
 */
-
-// BinaryOperator is a function which takes two integers and returns one
-type BinaryOperator func(a, b int) int
-
-// UnaryOperator is a function which takes one integer and returns one
-type UnaryOperator func(a int) int
 
 // Interpreter allows a user to define a set of operators that fit within the following grammar
 // and then use the interpreter to compute the results of programs written in that language.
@@ -28,7 +26,7 @@ type UnaryOperator func(a int) int
 //
 // - Factor := Term [FactorOp Factor]
 //
-// - Term := Integer | UnaryOp Term | LParen Expression RParen
+// - Term := Integer | UnaryOp Term | LParen Expression RParen | Label LParen RParen
 //
 // - Integer := Digit+
 //
@@ -37,6 +35,30 @@ type Interpreter struct {
 	factorOps     map[string]BinaryOperator
 	unaryOps      map[string]UnaryOperator
 	labelBindings map[string]int
+	funcBindings  map[string]function
+}
+
+// BinaryOperator is a function which takes two integers and returns one
+type BinaryOperator func(a, b int) int
+
+// UnaryOperator is a function which takes one integer and returns one
+type UnaryOperator func(a int) int
+
+type function struct {
+	tokens     []token
+	parameters []string
+	name       string
+	expOps     map[string]BinaryOperator
+	factorOps  map[string]BinaryOperator
+	unaryOps   map[string]UnaryOperator
+}
+
+func (f *function) apply() int {
+	i := NewInterpreter()
+	i.expOps = f.expOps
+	i.factorOps = f.factorOps
+	i.unaryOps = f.unaryOps
+	return i.executeTokens(f.tokens)
 }
 
 // NewInterpreter configures a new Interpreter object and returns it
@@ -46,6 +68,7 @@ func NewInterpreter() Interpreter {
 		factorOps:     make(map[string]BinaryOperator),
 		unaryOps:      make(map[string]UnaryOperator),
 		labelBindings: make(map[string]int),
+		funcBindings:  make(map[string]function),
 	}
 }
 
@@ -87,10 +110,18 @@ func (i *Interpreter) Execute(text string) int {
 
 	tokens := tokenizer.tokenize(text)
 
+	return i.executeTokens(tokens)
+}
+
+func (i *Interpreter) executeTokens(tokens []token) int {
 	var pos int
 	var result int
 	if len(tokens) >= 3 && tokens[0].ty == labelType && tokens[1].ty == assignmentOpType {
 		result, pos = i.assignment(tokens, 0)
+	} else if tokens[0].ty == labelType && tokens[0].value == "def" {
+		var f function
+		f, pos = i.functionDef(tokens, 0)
+		i.funcBindings[f.name] = f
 	} else {
 		result, pos = i.expression(tokens, 0)
 	}
@@ -111,6 +142,43 @@ func (i *Interpreter) createTokenizer() tokenizer {
 	}
 	// create tokenizer
 	return newTokenizer(opsList)
+}
+
+func (i *Interpreter) functionDef(tokens []token, currentPos int) (f function, pos int) {
+	if tokens[currentPos].ty != labelType || tokens[currentPos].value != "def" {
+		panic("unexpected token")
+	}
+	currentPos++
+
+	if tokens[currentPos].ty != labelType {
+		panic("expected label token found " + tokens[currentPos].value)
+	}
+	funcName := tokens[currentPos].value
+	currentPos++
+
+	// each label from now until an assignment operator is encountered is a function parameter
+	parameters := make([]string, 0)
+	for ; currentPos < len(tokens) && tokens[currentPos].ty == labelType; currentPos++ {
+		parameters = append(parameters, tokens[currentPos].value)
+	}
+
+	// consume assignment operator
+	if tokens[currentPos].ty != assignmentOpType {
+		panic("expected '=' found " + tokens[currentPos].value)
+	}
+	currentPos++
+
+	// the remaining tokens are the function logic
+	funcTokens := tokens[currentPos:]
+
+	return function{
+		name:       funcName,
+		tokens:     funcTokens,
+		parameters: parameters,
+		expOps:     i.expOps,
+		factorOps:  i.factorOps,
+		unaryOps:   i.unaryOps,
+	}, len(tokens)
 }
 
 func (i *Interpreter) assignment(tokens []token, currentPos int) (result int, pos int) {
@@ -190,7 +258,27 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int)
 		result, _ = strconv.Atoi(tokens[currentPos].value)
 		currentPos++
 	} else if tokens[currentPos].ty == labelType {
-		result, currentPos = i.lookupLabel(tokens, currentPos)
+		// check if this is a function call
+		if len(tokens)-currentPos-1 >= 1 && tokens[currentPos+1].ty == lParen {
+			funcName := tokens[currentPos].value
+			currentPos++
+			if tokens[currentPos].ty != lParen {
+				panic("expected lparen")
+			}
+			currentPos++
+			if tokens[currentPos].ty != rParen {
+				panic("expected rparen")
+			}
+			currentPos++
+			fmt.Println("calling function: " + funcName)
+			if f, ok := i.funcBindings[funcName]; ok {
+				result = f.apply()
+			} else {
+				panic("function name not found: " + funcName)
+			}
+		} else {
+			result, currentPos = i.lookupLabel(tokens, currentPos)
+		}
 	}
 
 	return result, currentPos
