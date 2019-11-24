@@ -21,8 +21,8 @@ func main() {
 	input2 := "second + 10"
 	fmt.Println(interpreter.Execute(input2))
 
-	f := "def f x y = 5 * 2"
+	f := "def f x y = y * x"
 	fmt.Println(interpreter.Execute(f))
-	f = "f() * 3"
+	f = "f(6/2, 3) * 3"
 	fmt.Println(interpreter.Execute(f))
 }

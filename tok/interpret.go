@@ -53,12 +53,18 @@ type function struct {
 	unaryOps   map[string]UnaryOperator
 }
 
-func (f *function) apply() int {
-	i := NewInterpreter()
-	i.expOps = f.expOps
-	i.factorOps = f.factorOps
-	i.unaryOps = f.unaryOps
-	return i.executeTokens(f.tokens)
+func (f *function) apply(params []int) int {
+	interpreter := NewInterpreter()
+	interpreter.expOps = f.expOps
+	interpreter.factorOps = f.factorOps
+	interpreter.unaryOps = f.unaryOps
+
+	// bind the parameter labels to their given values
+	for i, label := range f.parameters {
+		interpreter.labelBindings[label] = params[i]
+	}
+
+	return interpreter.executeTokens(f.tokens)
 }
 
 // NewInterpreter configures a new Interpreter object and returns it
@@ -211,8 +217,8 @@ func (i *Interpreter) expression(tokens []token, currentPos int) (result int, po
 		}
 	}
 
-	if pos < len(tokens) && tokens[pos].ty != rParen {
-		panic("unexpected token in expression")
+	if pos < len(tokens) && (tokens[pos].ty != rParen && tokens[pos].ty != commaType) {
+		panic("unexpected token in expression: " + tokens[pos].value)
 	}
 
 	return result, pos
@@ -252,7 +258,7 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int)
 			result, currentPos = i.term(tokens, currentPos)
 			result = op(result)
 		} else {
-			panic("unexpected token in factor")
+			panic("unexpected token in factor: " + tokens[currentPos].value)
 		}
 	} else if tokens[currentPos].ty == intType {
 		result, _ = strconv.Atoi(tokens[currentPos].value)
@@ -266,13 +272,26 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int)
 				panic("expected lparen")
 			}
 			currentPos++
+
+			// Get function parameters
+			params := make([]int, 0)
+			for currentPos < len(tokens) && tokens[currentPos].ty != rParen {
+				var v int
+				v, currentPos = i.expression(tokens, currentPos)
+				params = append(params, v)
+
+				if tokens[currentPos].ty == commaType {
+					currentPos++
+				}
+			}
+
 			if tokens[currentPos].ty != rParen {
 				panic("expected rparen")
 			}
 			currentPos++
 			fmt.Println("calling function: " + funcName)
 			if f, ok := i.funcBindings[funcName]; ok {
-				result = f.apply()
+				result = f.apply(params)
 			} else {
 				panic("function name not found: " + funcName)
 			}

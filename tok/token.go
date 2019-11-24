@@ -11,6 +11,7 @@ const (
 	rParen           tokenType = iota
 	labelType        tokenType = iota
 	assignmentOpType tokenType = iota
+	commaType        tokenType = iota
 )
 
 type token struct {
@@ -83,6 +84,11 @@ func (t *tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPo
 		return token{
 			value: "=",
 			ty:    assignmentOpType,
+		}, currentChar + 1
+	} else if raw[currentChar] == ',' {
+		return token{
+			value: ",",
+			ty:    commaType,
 		}, currentChar + 1
 	} else {
 		panic("unexpected character during tokenization: " + string(raw[currentChar]))
