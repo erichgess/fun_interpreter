@@ -22,7 +22,9 @@ func main() {
 	fmt.Println(interpreter.Execute(input2))
 
 	f := "def f x y = y * x"
-	fmt.Println(interpreter.Execute(f))
-	f = "f(6/2, 3) * 3"
+	interpreter.Execute(f)
+	g := "def g x = x + 2"
+	interpreter.Execute(g)
+	f = "f(6/2, g(3)) * 3"
 	fmt.Println(interpreter.Execute(f))
 }

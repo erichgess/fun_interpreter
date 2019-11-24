@@ -1,7 +1,6 @@
 package tok
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -289,7 +288,6 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int)
 				panic("expected rparen")
 			}
 			currentPos++
-			fmt.Println("calling function: " + funcName)
 			if f, ok := i.funcBindings[funcName]; ok {
 				result = f.apply(params)
 			} else {
