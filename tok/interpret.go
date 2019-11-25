@@ -293,7 +293,7 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int,
 			}
 			result = op(result)
 		} else {
-			panic("unexpected token in factor: " + tokens[currentPos].value)
+			return 0, 0, fmt.Errorf("unexpected token in factor: %s", tokens[currentPos].value)
 		}
 	} else if tokens[currentPos].ty == intType {
 		result, _ = strconv.Atoi(tokens[currentPos].value)
