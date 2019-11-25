@@ -59,6 +59,10 @@ func (f *function) apply(params []int) (int, error) {
 	interpreter.factorOps = f.factorOps
 	interpreter.unaryOps = f.unaryOps
 
+	if len(params) != len(f.parameters) {
+		return 0, fmt.Errorf("missing parameters; expected %d got %d", len(f.parameters), len(params))
+	}
+
 	// bind the parameter labels to their given values
 	for i, label := range f.parameters {
 		interpreter.labelBindings[label] = params[i]
@@ -133,7 +137,11 @@ func (i *Interpreter) executeTokens(tokens []token) (int, error) {
 		result, pos = i.assignment(tokens, 0)
 	} else if tokens[0].ty == labelType && tokens[0].value == "def" {
 		var f function
-		f, pos = i.functionDef(tokens, 0)
+		var err error
+		f, pos, err = i.functionDef(tokens, 0)
+		if err != nil {
+			return 0, err
+		}
 		i.funcBindings[f.name] = f
 	} else {
 		var err error
@@ -164,7 +172,7 @@ func (i *Interpreter) createTokenizer() tokenizer {
 	return newTokenizer(opsList)
 }
 
-func (i *Interpreter) functionDef(tokens []token, currentPos int) (f function, pos int) {
+func (i *Interpreter) functionDef(tokens []token, currentPos int) (f function, pos int, err error) {
 	if tokens[currentPos].ty != labelType || tokens[currentPos].value != "def" {
 		panic("unexpected token")
 	}
@@ -184,12 +192,17 @@ func (i *Interpreter) functionDef(tokens []token, currentPos int) (f function, p
 
 	// consume assignment operator
 	if tokens[currentPos].ty != assignmentOpType {
-		panic("expected '=' found " + tokens[currentPos].value)
+		return function{}, currentPos, fmt.Errorf("expected '=' found '%s'", tokens[currentPos].value)
 	}
 	currentPos++
 
 	// the remaining tokens are the function logic
 	funcTokens := tokens[currentPos:]
+
+	err = checkFunctionCorrectness(parameters, funcTokens)
+	if err != nil {
+		return function{}, currentPos, err
+	}
 
 	return function{
 		name:       funcName,
@@ -198,7 +211,26 @@ func (i *Interpreter) functionDef(tokens []token, currentPos int) (f function, p
 		expOps:     i.expOps,
 		factorOps:  i.factorOps,
 		unaryOps:   i.unaryOps,
-	}, len(tokens)
+	}, len(tokens), err
+}
+
+func checkFunctionCorrectness(parameters []string, tokens []token) error {
+	// convert parameters into look up table
+	paramLookup := make(map[string]bool)
+	for _, p := range parameters {
+		paramLookup[p] = true
+	}
+
+	// check that any variable in the function definition has a corresponding parameter
+	for _, tok := range tokens {
+		if tok.ty == labelType {
+			if _, ok := paramLookup[tok.value]; !ok {
+				return fmt.Errorf("undefined variable: %s", tok.value)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (i *Interpreter) assignment(tokens []token, currentPos int) (result int, pos int) {
@@ -238,7 +270,7 @@ func (i *Interpreter) expression(tokens []token, currentPos int) (result int, po
 	}
 
 	if pos < len(tokens) && (tokens[pos].ty != rParen && tokens[pos].ty != commaType) {
-		panic("unexpected token in expression: " + tokens[pos].value)
+		return result, pos, fmt.Errorf("unexpected token in expression: %s", tokens[pos].value)
 	}
 
 	return result, pos, nil
@@ -301,20 +333,20 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int,
 	} else if tokens[currentPos].ty == labelType {
 		// check if this is a function call
 		if len(tokens)-currentPos-1 >= 1 && tokens[currentPos+1].ty == lParen {
-			result, currentPos = i.functionCall(tokens, currentPos)
+			result, currentPos, err = i.functionCall(tokens, currentPos)
 		} else {
-			result, currentPos = i.lookupLabel(tokens, currentPos)
+			result, currentPos, err = i.lookupLabel(tokens, currentPos)
 		}
 	}
 
 	return result, currentPos, err
 }
 
-func (i *Interpreter) functionCall(tokens []token, currentPos int) (result int, pos int) {
+func (i *Interpreter) functionCall(tokens []token, currentPos int) (result int, pos int, err error) {
 	funcName := tokens[currentPos].value
 	currentPos++
 	if tokens[currentPos].ty != lParen {
-		panic("expected lparen")
+		return 0, 0, fmt.Errorf("expected lparen")
 	}
 	currentPos++
 
@@ -331,27 +363,30 @@ func (i *Interpreter) functionCall(tokens []token, currentPos int) (result int, 
 	}
 
 	if tokens[currentPos].ty != rParen {
-		panic("expected rparen")
+		return 0, 0, fmt.Errorf("expected rparen")
 	}
 	currentPos++
 	if f, ok := i.funcBindings[funcName]; ok {
-		result, _ = f.apply(params)
+		result, err = f.apply(params)
+		if err != nil {
+			return 0, 0, err
+		}
 	} else {
-		panic("function name not found: " + funcName)
+		return 0, 0, fmt.Errorf("function name not found: " + funcName)
 	}
 
-	return result, currentPos
+	return result, currentPos, nil
 }
 
-func (i *Interpreter) lookupLabel(tokens []token, currentPos int) (result int, pos int) {
+func (i *Interpreter) lookupLabel(tokens []token, currentPos int) (result int, pos int, err error) {
 	if tokens[currentPos].ty != labelType {
 		panic("attempting to look up label binding for token that is not a label")
 	}
 
 	label := tokens[currentPos].value
 	if v, ok := i.labelBindings[label]; ok {
-		return v, currentPos + 1
+		return v, currentPos + 1, nil
 	}
 
-	panic("could not find value for label: " + label)
+	return 0, currentPos, fmt.Errorf("could not find value for label: " + label)
 }
