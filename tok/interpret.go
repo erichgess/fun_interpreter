@@ -1,6 +1,7 @@
 package tok
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -81,30 +82,33 @@ func NewInterpreter() Interpreter {
 // If an operator already exists at the expression level with the given symbol, it will
 // be replaced.  If an operator with this symbol exists in the Factor operator set
 // then this will fail.
-func (i *Interpreter) AddExpressionOp(symbol string, apply BinaryOperator) {
+func (i *Interpreter) AddExpressionOp(symbol string, apply BinaryOperator) error {
 	// make sure the operator does not exist in the Factor set
 	if _, ok := i.factorOps[symbol]; ok {
-		panic("attempting to add operator to expression set when it is already in factor set")
+		return fmt.Errorf("attempting to add operator to expression set when it is already in factor set")
 	}
 	i.expOps[symbol] = apply
+	return nil
 }
 
 // AddFactorOp will add a new operator with the given symbol to the Factor level
 // of interpretation.  If an operator already exists with this symbol for Factor level
 // it will be replaced.  If an operator with this symbol exists in the Expression operator
 // set then this will fail.
-func (i *Interpreter) AddFactorOp(symbol string, apply BinaryOperator) {
+func (i *Interpreter) AddFactorOp(symbol string, apply BinaryOperator) error {
 	// make sure the operator does not exist in the Expression set
 	if _, ok := i.expOps[symbol]; ok {
-		panic("attempting to add operator to factor set when it is already in expression set")
+		return fmt.Errorf("attempting to add operator to factor set when it is already in expression set")
 	}
 	i.factorOps[symbol] = apply
+	return nil
 }
 
 // AddUnaryOp will add a unary operator that will be applied at the Term level
 // of the language.
-func (i *Interpreter) AddUnaryOp(symbol string, apply UnaryOperator) {
+func (i *Interpreter) AddUnaryOp(symbol string, apply UnaryOperator) error {
 	i.unaryOps[symbol] = apply
+	return nil
 }
 
 // Execute will take a program that uses the interpreters defined language

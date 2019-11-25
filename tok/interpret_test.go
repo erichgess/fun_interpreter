@@ -43,3 +43,17 @@ func Test_OrderOperations(t *testing.T) {
 
 	assert.Equal(t, -5, result)
 }
+
+func Test_AddExpressionOpWhenFactorOpAlreadyExists_IsError(t *testing.T) {
+	interpreter := NewInterpreter()
+	interpreter.AddFactorOp("*", func(a, b int) int { return a * b })
+	err := interpreter.AddExpressionOp("*", func(a, b int) int { return a + b })
+	assert.Error(t, err)
+}
+
+func Test_AddFactorOpWhenExpressionOpAlreadyExists_IsError(t *testing.T) {
+	interpreter := NewInterpreter()
+	interpreter.AddExpressionOp("*", func(a, b int) int { return a + b })
+	err := interpreter.AddFactorOp("*", func(a, b int) int { return a * b })
+	assert.Error(t, err)
+}
