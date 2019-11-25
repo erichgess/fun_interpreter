@@ -143,7 +143,7 @@ func (i *Interpreter) executeTokens(tokens []token) (int, error) {
 		}
 	}
 	if pos != len(tokens) {
-		panic("unexpected tokens in expression")
+		return 0, fmt.Errorf("unexpected tokens in expression: %s", tokens[pos].value)
 	}
 	return result, nil
 }
@@ -280,7 +280,7 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int,
 
 		// consume right paren
 		if currentPos >= len(tokens) || tokens[currentPos].ty != rParen {
-			panic("expected right paren")
+			return 0, currentPos, fmt.Errorf("expected right paren")
 		}
 		currentPos++
 	} else if tokens[currentPos].ty == operatorType {

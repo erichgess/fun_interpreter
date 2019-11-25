@@ -86,3 +86,15 @@ func Test_EvaluateExpressionWithBinaryOpMissingLeftOperand_IsError(t *testing.T)
 	_, err := interpreter.Execute("+ 2")
 	assert.Error(t, err)
 }
+
+func Test_RightParenWithNoMatchingLeftParen_IsError(t *testing.T) {
+	interpreter := NewInterpreter()
+	_, err := interpreter.Execute("5)")
+	assert.Error(t, err)
+}
+
+func Test_LeftParenWithNoMatchingRightParen_IsError(t *testing.T) {
+	interpreter := NewInterpreter()
+	_, err := interpreter.Execute("(5")
+	assert.Error(t, err)
+}
