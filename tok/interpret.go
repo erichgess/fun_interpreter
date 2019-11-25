@@ -145,6 +145,9 @@ func (i *Interpreter) createTokenizer() tokenizer {
 	for k := range i.factorOps {
 		opsList = append(opsList, k)
 	}
+	for k := range i.unaryOps {
+		opsList = append(opsList, k)
+	}
 	// create tokenizer
 	return newTokenizer(opsList)
 }
