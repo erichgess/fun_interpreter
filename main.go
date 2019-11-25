@@ -20,7 +20,8 @@ func main() {
 	input := "second = -3 * 4 - 2*test"
 	interpreter.Execute(input)
 	input2 := "second + 10"
-	fmt.Printf("second + 10 = %d\n", interpreter.Execute(input2))
+	r, _ := interpreter.Execute(input2)
+	fmt.Printf("second + 10 = %d\n", r)
 
 	f := "def f x y = y * x"
 	interpreter.Execute(f)

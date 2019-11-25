@@ -1,6 +1,9 @@
 package tok
 
-import "unicode"
+import (
+	"fmt"
+	"unicode"
+)
 
 type tokenType int
 
@@ -42,21 +45,25 @@ func newTokenizer(operators []string) tokenizer {
 	return tokenizer
 }
 
-func (t *tokenizer) tokenize(text string) []token {
+func (t *tokenizer) tokenize(text string) ([]token, error) {
 	raw := []rune(text)
 	tokens := make([]token, 0)
 	// while not EOL
 	for currentChar := 0; currentChar < len(raw); {
 		// create a new token
 		var tok token
-		tok, currentChar = t.extractToken(raw, currentChar)
+		var err error
+		tok, currentChar, err = t.extractToken(raw, currentChar)
+		if err != nil {
+			return nil, err
+		}
 		tokens = append(tokens, tok)
 	}
 
-	return tokens
+	return tokens, nil
 }
 
-func (t *tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPos int) {
+func (t *tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPos int, err error) {
 	// consume any whitespace
 	for ; currentChar < len(raw) && unicode.IsSpace(raw[currentChar]); currentChar++ {
 	}
@@ -74,28 +81,28 @@ func (t *tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPo
 		return token{
 			value: "(",
 			ty:    lParen,
-		}, currentChar + 1
+		}, currentChar + 1, nil
 	} else if raw[currentChar] == ')' {
 		return token{
 			value: ")",
 			ty:    rParen,
-		}, currentChar + 1
+		}, currentChar + 1, nil
 	} else if raw[currentChar] == '=' {
 		return token{
 			value: "=",
 			ty:    assignmentOpType,
-		}, currentChar + 1
+		}, currentChar + 1, nil
 	} else if raw[currentChar] == ',' {
 		return token{
 			value: ",",
 			ty:    commaType,
-		}, currentChar + 1
+		}, currentChar + 1, nil
 	} else {
-		panic("unexpected character during tokenization: " + string(raw[currentChar]))
+		return token{}, -1, fmt.Errorf("unexpected character during tokenization: %s", string(raw[currentChar]))
 	}
 }
 
-func (t *tokenizer) extractIntToken(raw []rune, currentChar int) (tok token, charPos int) {
+func (t *tokenizer) extractIntToken(raw []rune, currentChar int) (tok token, charPos int, err error) {
 	for charPos = currentChar; charPos < len(raw) && unicode.IsDigit(raw[charPos]); charPos++ {
 	}
 
@@ -104,10 +111,10 @@ func (t *tokenizer) extractIntToken(raw []rune, currentChar int) (tok token, cha
 		ty:    intType,
 	}
 
-	return tok, charPos
+	return tok, charPos, nil
 }
 
-func (t *tokenizer) extractOperatorToken(raw []rune, currentChar int) (tok token, newCharPos int) {
+func (t *tokenizer) extractOperatorToken(raw []rune, currentChar int) (tok token, newCharPos int, err error) {
 	charPos := currentChar
 	for ; charPos < len(raw); charPos++ {
 		if _, ok := t.operatorRuneSet[raw[charPos]]; !ok {
@@ -120,12 +127,12 @@ func (t *tokenizer) extractOperatorToken(raw []rune, currentChar int) (tok token
 		ty:    operatorType,
 	}
 
-	return tok, charPos
+	return tok, charPos, nil
 }
 
-func (t *tokenizer) extractLabelToken(raw []rune, currentChar int) (tok token, newCharPos int) {
+func (t *tokenizer) extractLabelToken(raw []rune, currentChar int) (tok token, newCharPos int, err error) {
 	if !unicode.IsLetter(raw[currentChar]) {
-		panic("`label` must start with letter")
+		return token{}, currentChar, fmt.Errorf("`label` must start with letter")
 	}
 
 	start := currentChar
@@ -140,5 +147,5 @@ func (t *tokenizer) extractLabelToken(raw []rune, currentChar int) (tok token, n
 		ty:    labelType,
 	}
 
-	return tok, currentChar
+	return tok, currentChar, nil
 }

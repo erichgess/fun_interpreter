@@ -113,13 +113,17 @@ func (i *Interpreter) AddUnaryOp(symbol string, apply UnaryOperator) error {
 
 // Execute will take a program that uses the interpreters defined language
 // and attempt to compute it's result
-func (i *Interpreter) Execute(text string) int {
+func (i *Interpreter) Execute(text string) (int, error) {
 	// construct a tokenizer
 	tokenizer := i.createTokenizer()
 
-	tokens := tokenizer.tokenize(text)
+	tokens, err := tokenizer.tokenize(text)
 
-	return i.executeTokens(tokens)
+	if err != nil {
+		return 0, err
+	}
+
+	return i.executeTokens(tokens), nil
 }
 
 func (i *Interpreter) executeTokens(tokens []token) int {
