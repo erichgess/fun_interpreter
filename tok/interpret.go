@@ -53,7 +53,7 @@ type function struct {
 	unaryOps   map[string]UnaryOperator
 }
 
-func (f *function) apply(params []int) int {
+func (f *function) apply(params []int) (int, error) {
 	interpreter := NewInterpreter()
 	interpreter.expOps = f.expOps
 	interpreter.factorOps = f.factorOps
@@ -123,10 +123,10 @@ func (i *Interpreter) Execute(text string) (int, error) {
 		return 0, err
 	}
 
-	return i.executeTokens(tokens), nil
+	return i.executeTokens(tokens)
 }
 
-func (i *Interpreter) executeTokens(tokens []token) int {
+func (i *Interpreter) executeTokens(tokens []token) (int, error) {
 	var pos int
 	var result int
 	if len(tokens) >= 3 && tokens[0].ty == labelType && tokens[1].ty == assignmentOpType {
@@ -136,12 +136,16 @@ func (i *Interpreter) executeTokens(tokens []token) int {
 		f, pos = i.functionDef(tokens, 0)
 		i.funcBindings[f.name] = f
 	} else {
-		result, pos = i.expression(tokens, 0)
+		var err error
+		result, pos, err = i.expression(tokens, 0)
+		if err != nil {
+			return 0, err
+		}
 	}
 	if pos != len(tokens) {
 		panic("unexpected tokens in expression")
 	}
-	return result
+	return result, nil
 }
 
 func (i *Interpreter) createTokenizer() tokenizer {
@@ -209,19 +213,25 @@ func (i *Interpreter) assignment(tokens []token, currentPos int) (result int, po
 		panic("expecting assignment operator")
 	}
 	currentPos++
-	result, pos = i.expression(tokens, currentPos)
+	result, pos, _ = i.expression(tokens, currentPos)
 	i.labelBindings[label] = result
 
 	return result, pos
 }
 
-func (i *Interpreter) expression(tokens []token, currentPos int) (result int, pos int) {
-	result, pos = i.factor(tokens, currentPos)
+func (i *Interpreter) expression(tokens []token, currentPos int) (result int, pos int, err error) {
+	result, pos, err = i.factor(tokens, currentPos)
+	if err != nil {
+		return result, pos, err
+	}
 
 	if pos < len(tokens) && tokens[pos].ty == operatorType {
 		if op, ok := i.expOps[tokens[pos].value]; ok {
 			pos++
-			r, p := i.expression(tokens, pos)
+			r, p, err := i.expression(tokens, pos)
+			if err != nil {
+				return r, p, err
+			}
 			result = op(result, r)
 			pos = p
 		}
@@ -231,30 +241,42 @@ func (i *Interpreter) expression(tokens []token, currentPos int) (result int, po
 		panic("unexpected token in expression: " + tokens[pos].value)
 	}
 
-	return result, pos
+	return result, pos, nil
 }
 
-func (i *Interpreter) factor(tokens []token, currentPos int) (result int, pos int) {
-	result, currentPos = i.term(tokens, currentPos)
+func (i *Interpreter) factor(tokens []token, currentPos int) (result int, pos int, err error) {
+	result, currentPos, err = i.term(tokens, currentPos)
+	if err != nil {
+		return result, currentPos, err
+	}
 
 	if currentPos < len(tokens) {
 		if tokens[currentPos].ty == operatorType {
 			if op, ok := i.factorOps[tokens[currentPos].value]; ok {
 				currentPos++
-				r, p := i.factor(tokens, currentPos)
+				r, p, err := i.factor(tokens, currentPos)
+				if err != nil {
+					return r, p, err
+				}
 				result = op(result, r)
 				currentPos = p
 			}
 		}
 	}
 
-	return result, currentPos
+	return result, currentPos, nil
 }
 
-func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int) {
+func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int, err error) {
+	if currentPos == len(tokens) {
+		return 0, currentPos, fmt.Errorf("expecting term, but none found")
+	}
 	if tokens[currentPos].ty == lParen {
 		currentPos++
-		result, currentPos = i.expression(tokens, currentPos)
+		result, currentPos, err = i.expression(tokens, currentPos)
+		if err != nil {
+			return result, currentPos, err
+		}
 
 		// consume right paren
 		if currentPos >= len(tokens) || tokens[currentPos].ty != rParen {
@@ -265,7 +287,10 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int)
 		// if the operator is not unary then something is wrong
 		if op, ok := i.unaryOps[tokens[currentPos].value]; ok {
 			currentPos++
-			result, currentPos = i.term(tokens, currentPos)
+			result, currentPos, err = i.term(tokens, currentPos)
+			if err != nil {
+				return 0, currentPos, err
+			}
 			result = op(result)
 		} else {
 			panic("unexpected token in factor: " + tokens[currentPos].value)
@@ -282,7 +307,7 @@ func (i *Interpreter) term(tokens []token, currentPos int) (result int, pos int)
 		}
 	}
 
-	return result, currentPos
+	return result, currentPos, err
 }
 
 func (i *Interpreter) functionCall(tokens []token, currentPos int) (result int, pos int) {
@@ -297,7 +322,7 @@ func (i *Interpreter) functionCall(tokens []token, currentPos int) (result int, 
 	params := make([]int, 0)
 	for currentPos < len(tokens) && tokens[currentPos].ty != rParen {
 		var v int
-		v, currentPos = i.expression(tokens, currentPos)
+		v, currentPos, _ = i.expression(tokens, currentPos)
 		params = append(params, v)
 
 		if tokens[currentPos].ty == commaType {
@@ -310,7 +335,7 @@ func (i *Interpreter) functionCall(tokens []token, currentPos int) (result int, 
 	}
 	currentPos++
 	if f, ok := i.funcBindings[funcName]; ok {
-		result = f.apply(params)
+		result, _ = f.apply(params)
 	} else {
 		panic("function name not found: " + funcName)
 	}

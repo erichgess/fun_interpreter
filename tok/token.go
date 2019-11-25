@@ -50,6 +50,12 @@ func (t *tokenizer) tokenize(text string) ([]token, error) {
 	tokens := make([]token, 0)
 	// while not EOL
 	for currentChar := 0; currentChar < len(raw); {
+		// if whitespace then move to next token
+		if unicode.IsSpace(raw[currentChar]) {
+			currentChar++
+			continue
+		}
+
 		// create a new token
 		var tok token
 		var err error
@@ -64,10 +70,6 @@ func (t *tokenizer) tokenize(text string) ([]token, error) {
 }
 
 func (t *tokenizer) extractToken(raw []rune, currentChar int) (tok token, charPos int, err error) {
-	// consume any whitespace
-	for ; currentChar < len(raw) && unicode.IsSpace(raw[currentChar]); currentChar++ {
-	}
-
 	// Check the current char to determine what type of token this is
 	// if char is digit then extract integer token
 	if unicode.IsDigit(raw[currentChar]) {

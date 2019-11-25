@@ -66,3 +66,16 @@ func Test_EvaluationExpressionWithUndefinedBinaryOp_IsError(t *testing.T) {
 	_, err := interpreter.Execute("2 + 2")
 	assert.Error(t, err)
 }
+
+func Test_EvaluationExpressionWithUndefinedUnaryOp_IsError(t *testing.T) {
+	interpreter := NewInterpreter()
+	_, err := interpreter.Execute("-2")
+	assert.Error(t, err)
+}
+
+func Test_EvaluateExpressionWithBinaryOpMissingRightOperand_IsError(t *testing.T) {
+	interpreter := NewInterpreter()
+	interpreter.AddExpressionOp("+", func(a, b int) int { return a + b })
+	_, err := interpreter.Execute("2 + ")
+	assert.Error(t, err)
+}
